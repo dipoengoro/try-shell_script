@@ -1,0 +1,125 @@
+#!/bin/bash
+
+prog_name=$(basename "$0" .sh | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1')
+
+progs=("1. Penjumlahan" "2. Pengurangan" "5. Bebas" "X. Keluar")
+
+greetings="Selamat Datang di Program $prog_name"
+
+end_of_answer() {
+    echo "---------------"
+    echo
+}
+
+num_global=0
+
+check_input_is_all_numbers="^[0-9]+$"
+
+prompt() {
+    for prog in "${progs[@]}"; do
+        echo "$prog"
+    done
+    read -r -p "Jawaban: " jawab
+
+    case "$jawab" in
+    1)
+        jumlah
+        ;;
+    2)
+        kurang
+        ;;
+    5)
+        bebas
+        ;;
+    *)
+        if [ "${jawab,,}" == "x" ]; then
+            echo "Sampai jumpa"
+        else
+            echo "Tidak valid"
+            end_of_answer
+        fi
+        ;;
+    esac
+}
+
+check_num() {
+    local array=("$@")
+    for i in "${!array[@]}"; do
+        if [ "${array[i]}" = 'num' ]; then
+            array[i]=$num_global
+        fi
+    done
+    safe_array=("${array[@]}")
+}
+
+jumlah() {
+    local sum=0
+    local success=true
+    local num_err=0
+    read -r -p "Silakan input angka (pisah dengan spasi) " -a input
+
+    # for i in "${!input[@]}"; do
+    #     if [ "${input[i]}" = 'num' ]; then
+    #         input[i]=$num_global
+    #     fi
+    # done
+
+    check_num input
+
+    for num in "${safe_array[@]}"; do
+        if [[ "$num" =~ $check_input_is_all_numbers ]]; then
+            sum=$((sum + num))
+        else
+            success=false
+            num_err=$num
+        fi
+    done
+    if $success; then
+        echo $sum
+        num_global=$sum
+    else
+        echo "$num_err must be number"
+    fi
+    end_of_answer
+}
+
+kurang() {
+    read -r -p "Silakan input angka (pisah dengan spasi) " -a input
+
+    local subtract="${input[0]}"
+    local success=true
+    local num_err=0
+
+    for num in "${input[@]}"; do
+        if [[ $num =~ $check_input_is_all_numbers ]]; then
+            if [ "$num" -eq "$subtract" ]; then
+                continue
+            fi
+            subtract=$((subtract - num))
+        else
+            success=false
+            num_err=$num
+        fi
+    done
+
+    if $success; then
+        echo "$subtract"
+        num_global=$subtract
+    else
+        echo "$num_err must be number"
+    fi
+    end_of_answer
+}
+
+bebas() {
+    read -r -p "Silakan input angka (pisah dengan spasi) " input
+    end_of_answer
+}
+
+echo "$greetings"
+while true; do
+    prompt
+    if [ "${jawab,,}" == "x" ]; then
+        break
+    fi
+done

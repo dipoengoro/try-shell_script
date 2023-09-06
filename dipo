@@ -1,0 +1,67 @@
+#!/bin/bash
+
+prog_name=$(basename "$0" .sh | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1')
+
+progs[0]="X. Keluar"
+progs[1]="1. Upgrade"
+progs[2]="2. Daftar"
+progs[3]="3. Copy"
+
+greetings="Selamat Datang di Program $prog_name"
+
+end_of_answer() {
+    echo "---------------"
+    echo
+}
+
+prompt() {
+    for prog in "${progs[@]}"; do
+        echo "$prog"
+    done
+    read -r -p "Jawaban: " jawab
+
+    case "$jawab" in
+    1)
+        upgrade
+        ;;
+    2)
+        daftar
+        ;;
+    3)
+        copy
+        ;;
+    *)
+        if [ "${jawab,,}" == "x" ]; then
+            echo "Sampai jumpa"
+        else
+            echo "Tidak valid"
+            end_of_answer
+        fi
+        ;;
+    esac
+}
+
+function upgrade() {
+    sudo apt update && sudo apt upgrade
+    end_of_answer
+}
+
+function daftar() {
+    ls
+    end_of_answer
+}
+
+function copy() {
+    read -r -p "File asal dan file tujuan pisahkan dengan spasi " -a input
+
+    cp "${input[0]}" "${input[1]}"
+    end_of_answer
+}
+
+echo "$greetings"
+while true; do
+    prompt
+    if [ "${jawab,,}" == "x" ]; then
+        exit 0
+    fi
+done

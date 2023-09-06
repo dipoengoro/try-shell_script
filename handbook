@@ -1,0 +1,5 @@
+#!/bin/bash
+
+read -rp "What's your fullname? " fullname
+
+echo -e "Hello, $fullname"

@@ -1,0 +1,8 @@
+rahmat|rahmat@gmail.com|jakarta|L|17|7000
+fandi|fandi@gmail.com|bekasi|L|20|10000
+ana|ana@yahoo.com|bantul|P|27|40000
+indah|indah@gmail.com|sleman|P|13|60000
+aco||sleman|L|33|900000
+mamat|mamat@gmail.com|depok|L|28|80000
+mamat|mamat@gmail.com|depok|L|28|80000
+alan|alan@gmail.com|depok|L|28

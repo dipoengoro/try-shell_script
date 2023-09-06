@@ -1,0 +1,241 @@
+#!/bin/bash
+
+source="/home/dipoengoro/latihan/data.txt"
+source_payment="/home/dipoengoro/latihan/data_payment_injected_20220816.txt"
+
+function setData() {
+    local input
+    local sources=("1. Data pengguna" "2. Data payment")
+    for i in "${sources[@]}"; do
+        echo "$i"
+    done
+    read -rp "Input data apa: " input
+    if [ "$input" -eq 1 ]; then
+        read -rp "Silakan input data pengguna: " input_data_pengguna
+        source="$input_data_pengguna"
+    elif [ "$input" -eq 2 ]; then
+        read -rp "Silakan input data payment: " input_data_payment
+        source_payment="$input_data_payment"
+    fi
+}
+
+function border() {
+    echo ""
+    echo "-------------------------------"
+    echo ""
+}
+
+function test1() {
+    #soal
+    local soal1="nama file = "
+    local soal2="jumlah kolom = "
+    local soal3="jumlah anomaly kolom = "
+    local soal4="data anomaly kolom = "
+    local soal5="jumlah row = "
+    local soal6="jumlah data duplicate = "
+    local soal7="data yang duplicate = "
+    local soal8="jumlah saldo laki-laki = "
+    local soal9="jumlah saldo perempuan = "
+    local soal10="rata-rata usia = "
+
+    border
+    echo "$soal1 $(basename "$source")"
+    echo "$soal2 $(awk -F"|" 'NR==1 {print NF}' "$source")"
+    echo "$soal3 $(awk -F"|" 'NF < 6 {row+=1} END {print row}' "$source")"
+    echo "$soal4 $(awk -F"|" 'NF < 6 {print}' "$source")"
+    echo "$soal5 $(awk 'END {print NR}' "$source")"
+    echo "$soal6 $(awk -F"|" 'seen[$2]++ == 1 {row++} END {print row}' "$source")"
+    echo "$soal7 $(awk -F"|" 'seen[$2]++ == 1' "$source")"
+    echo "$soal8 $(awk -F"|" '$4 == "L" {sum += $6} END {print sum}' "$source")"
+    echo "$soal9 $(awk -F"|" '$4 == "P" {sum += $6} END {print sum}' "$source")"
+    echo "$soal10 $(awk -F"|" '{usia+=$5} END {printf "%d", usia/NR}' "$source")"
+    border
+}
+
+function test2() {
+    border
+    awk -F"|" '{print $1}' "$source"
+    local input
+    read -rp "Nama siapa yang dicari: " input
+    local IFS="|"
+    local array
+    local row
+    row=$(awk -F"|" -v input="$input" '$1 == input' "$source")
+
+    if [ "$row" != "" ]; then
+
+        read -ra array <<<"$row"
+
+        border
+        for i in "${!array[@]}"; do
+            case "$i" in
+            0)
+                echo "Nama : ${array[$i]}"
+                ;;
+            1)
+                local email
+                if [ "${array[$i]}" == "" ]; then
+                    email="email kosong"
+                else
+                    email=${array[$i]}
+                fi
+
+                echo "email : $email"
+                ;;
+            2)
+                echo "alamat : ${array[$i]}"
+                ;;
+            3)
+                local jenis_kelamin
+                if [ "${array[$i]}" == "L" ]; then
+                    jenis_kelamin="Laki-laki"
+                elif [ "${array[$i]}" == "P" ]; then
+                    jenis_kelamin="Perempuan"
+                else
+                    jenis_kelamin="Tidak Memilih"
+                fi
+
+                echo "jenis kelamin : $jenis_kelamin"
+                ;;
+            4)
+                local umur=${array[$i]}
+                local kategori=""
+                if [ "$umur" -gt 25 ]; then
+                    kategori="dewasa"
+                elif [ "$umur" -ge 17 ] || [ "$umur" -le 25 ]; then
+                    kategori="remaja"
+                else
+                    kategori="anak anak"
+                fi
+                echo "umur : $umur"
+                echo "kategori : $kategori"
+                ;;
+            5)
+                echo "saldo : ${array[$i]}"
+                ;;
+            esac
+        done
+        border
+    else
+        border
+        echo "Input tidak valid"
+        border
+    fi
+}
+
+function test3() {
+    IFS="|"
+    local row_diamond
+    row_diamond=$(awk -F"|" '$4 == "DIAMOND" {sumTransaksi+=1; sumPoin+=$3} END {print "DIAMOND|"sumPoin"|"sumTransaksi}' "$source_payment")
+    local row_gold
+    row_gold=$(awk -F"|" '$4 == "GOLD" {sumTransaksi+=1; sumPoin+=$3} END {print "GOLD|"sumPoin"|"sumTransaksi}' "$source_payment")
+    local row_silver
+    row_silver=$(awk -F"|" '$4 == "SILVER" {sumTransaksi+=1; sumPoin+=$3} END {print "SILVER|"sumPoin"|"sumTransaksi}' "$source_payment")
+    local row_platinum
+    row_platinum=$(awk -F"|" '$4 == "PLATINUM" {sumTransaksi+=1; sumPoin+=$3} END {print "PLATINUM|"sumPoin"|"sumTransaksi}' "$source_payment")
+    local array=("$row_diamond" "$row_gold" "$row_silver" "$row_platinum")
+    local cap_diamond=500
+    local cap_gold=50000
+    local cap_silver=10000
+    local cap_platinum=5000
+
+    border
+    echo -e "+---------------------------------------------------+"
+    echo -e "|                 SUMMARY TIER POIN                 |"
+    echo -e "|------+-----------+-------------+------------------|"
+    echo -e "| NO.  | TIER      | TOTAL POIN  | TOTAL TRANSAKSI  |"
+    echo -e "|------+-----------+-------------+------------------|"
+    for i in "${!array[@]}"; do
+        read -ra data <<<"${array[$i]}"
+        data1=${data[0]}
+        space1=$((10 - ${#data1}))
+        if [ $space1 -gt 0 ]; then
+            column2=$(printf "%s%${space1}s" "$data1" " ")
+        else
+            column2="$data1"
+        fi
+
+        data2=${data[1]}
+        space2=$((12 - ${#data2}))
+        if [ $space2 -gt 0 ]; then
+            column3=$(printf "%s%${space2}s" "$data2" " ")
+        else
+            column3="$data2"
+        fi
+
+        data3=${data[2]}
+        space3=$((17 - ${#data3}))
+        if [ $space3 -gt 0 ]; then
+            column4=$(printf "%s%${space3}s" "$data3" " ")
+        else
+            column4="$data3"
+        fi
+        echo -e "| $i    | $column2| $column3| $column4|"
+    done
+    echo -e "+------+-----------+-------------+------------------+"
+
+    echo "Caption :"
+    for i in "${!array[@]}"; do
+        read -ra data <<<"${array[$i]}"
+        local is_ok
+        local cap
+        case "$i" in
+        0)
+            cap="$cap_diamond"
+            ;;
+        1)
+            cap="$cap_gold"
+            ;;
+        2)
+            cap="$cap_silver"
+            ;;
+        3)
+            cap="$cap_platinum"
+            ;;
+        esac
+
+        if [ "${data[2]}" -gt "$cap" ]; then
+            is_ok="data aman"
+        else
+            is_ok="tidak aman"
+        fi
+
+        echo "${data[0]} $is_ok"
+    done
+    border
+}
+
+function prompt() {
+    local feature=("1. Soal 1" "2. Soal 2" "3. Soal 3" "4. Set Data" "X. Keluar")
+
+    for i in "${feature[@]}"; do
+        echo "$i"
+    done
+
+    read -rp "Jawaban: " input
+    case "$input" in
+    1)
+        test1
+        ;;
+    2)
+        test2
+        ;;
+    3)
+        test3
+        ;;
+    4)
+        setData
+        ;;
+    "x" | "X")
+        echo "Sampai jumpa"
+        exit 0
+        ;;
+    *)
+        echo "Input tidak valid"
+        ;;
+    esac
+}
+
+while true; do
+    prompt
+done
