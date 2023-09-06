@@ -64,7 +64,7 @@ function test2() {
 
     if [ "$row" != "" ]; then
 
-        read -ra array <<<"$row"
+        read -ra array <<< "$row"
 
         border
         for i in "${!array[@]}"; do
@@ -125,15 +125,19 @@ function test2() {
 
 function test3() {
     IFS="|"
-    local row_diamond
-    row_diamond=$(awk -F"|" '$4 == "DIAMOND" {sumTransaksi+=1; sumPoin+=$3} END {print "DIAMOND|"sumPoin"|"sumTransaksi}' "$source_payment")
-    local row_gold
-    row_gold=$(awk -F"|" '$4 == "GOLD" {sumTransaksi+=1; sumPoin+=$3} END {print "GOLD|"sumPoin"|"sumTransaksi}' "$source_payment")
-    local row_silver
-    row_silver=$(awk -F"|" '$4 == "SILVER" {sumTransaksi+=1; sumPoin+=$3} END {print "SILVER|"sumPoin"|"sumTransaksi}' "$source_payment")
-    local row_platinum
-    row_platinum=$(awk -F"|" '$4 == "PLATINUM" {sumTransaksi+=1; sumPoin+=$3} END {print "PLATINUM|"sumPoin"|"sumTransaksi}' "$source_payment")
-    local array=("$row_diamond" "$row_gold" "$row_silver" "$row_platinum")
+    local -a array
+    mapfile -t array < <(awk -F"|" '
+    {
+        sumTransaksi[$4] += 1;
+        sumPoin[$4] += $3;
+    }
+    
+    END {
+        for (level in sumTransaksi) {
+            print level"|"sumPoin[level]"|"sumTransaksi[level]
+        }
+    }
+    ' "$source_payment" | sort)
     local cap_diamond=500
     local cap_gold=50000
     local cap_silver=10000
@@ -146,7 +150,7 @@ function test3() {
     echo -e "| NO.  | TIER      | TOTAL POIN  | TOTAL TRANSAKSI  |"
     echo -e "|------+-----------+-------------+------------------|"
     for i in "${!array[@]}"; do
-        read -ra data <<<"${array[$i]}"
+        read -ra data <<< "${array[$i]}"
         data1=${data[0]}
         space1=$((10 - ${#data1}))
         if [ $space1 -gt 0 ]; then
@@ -170,26 +174,27 @@ function test3() {
         else
             column4="$data3"
         fi
-        echo -e "| $i    | $column2| $column3| $column4|"
+        echo -e "| $(("$i" + 1))    | $column2| $column3| $column4|"
     done
     echo -e "+------+-----------+-------------+------------------+"
 
     echo "Caption :"
     for i in "${!array[@]}"; do
+        IFS="|"
         read -ra data <<<"${array[$i]}"
         local is_ok
         local cap
-        case "$i" in
-        0)
+        case ${data[0]} in
+        "DIAMOND")
             cap="$cap_diamond"
             ;;
-        1)
+        "GOLD")
             cap="$cap_gold"
             ;;
-        2)
+        "SILVER")
             cap="$cap_silver"
             ;;
-        3)
+        "PLATINUM")
             cap="$cap_platinum"
             ;;
         esac
